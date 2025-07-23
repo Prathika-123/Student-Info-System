@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Student Management</h2>
+
+    <!-- Add Student Form -->
+    <form id="studentForm" class="mb-4">
+        <div class="row g-2 mb-2">
+            <div class="col-md-4">
+                <input type="text" id="name" class="form-control" placeholder="Student Name" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" id="age" class="form-control" placeholder="Age" required>
+            </div>
+            <div class="col-md-6">
+                <input type="text" id="subjects" class="form-control" placeholder="Subjects (comma-separated)" required>
+            </div>
+        </div>
+        <div class="row g-2 mb-2">
+            <div class="col-md-6">
+                <input type="text" id="hobbies" class="form-control" placeholder="Hobbies (comma-separated)" required>
+            </div>
+            <div class="col-md-6">
+                <input type="text" id="subjectMarks" class="form-control" placeholder="Marks (comma-separated, match subjects order)" required>
+            </div>
+        </div>
+        <div class="row g-2">
+            <div class="col-md-2 ms-auto">
+                <button type="submit" class="btn btn-success w-100">Add Student</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Student List Table -->
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Subjects</th>
+            <th>Hobbies</th>
+            <th>Subject Marks</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="studentTableBody">
+        <!-- Data will be inserted here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const apiUrl = "http://localhost:8080/students";
+
+    // Fetch and display students
+    async function fetchStudents() {
+        const response = await fetch(apiUrl);
+        const students = await response.json();
+        const tableBody = document.getElementById("studentTableBody");
+        tableBody.innerHTML = "";
+        students.forEach(s => {
+            const marks = Object.entries(s.subjectMarks).map(([subject, mark]) => `${subject}: ${mark}`).join(", ");
+            const row = `<tr>
+                <td>${s.id}</td>
+                <td>${s.name}</td>
+                <td>${s.age}</td>
+                <td>${s.subjects.join(", ")}</td>
+                <td>${Array.from(s.hobbies).join(", ")}</td>
+                <td>${marks}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id})">Delete</button></td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    // Add student
+    document.getElementById("studentForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const name = document.getElementById("name").value.trim();
+        const age = parseInt(document.getElementById("age").value.trim());
+
+        const subjects = document.getElementById("subjects").value.split(",").map(s => s.trim());
+        const hobbies = document.getElementById("hobbies").value.split(",").map(h => h.trim());
+        const marks = document.getElementById("subjectMarks").value.split(",").map(m => parseInt(m.trim()));
+
+        if (subjects.length !== marks.length) {
+            alert("Number of marks must match number of subjects");
+            return;
+        }
+
+        const subjectMarks = {};
+        subjects.forEach((subject, index) => {
+            subjectMarks[subject] = marks[index];
+        });
+
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name, age, subjects, hobbies, subjectMarks })
+        });
+
+        if (response.ok) {
+            document.getElementById("studentForm").reset();
+            fetchStudents();
+        } else {
+            alert("Error adding student");
+        }
+    });
+
+    // Delete student
+    async function deleteStudent(id) {
+        const response = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+        if (response.ok) {
+            fetchStudents();
+        } else {
+            alert("Error deleting student");
+        }
+    }
+
+    // Initial load
+    fetchStudents();
+</script>
+
+</body>
+</html>
