@@ -12,3 +12,7 @@ public class DemoApplication {
 	}
 
 }
+
+/*
+LINK TO THE OUTPUT PAGE: http://localhost:8080/frontend.html
+ */
